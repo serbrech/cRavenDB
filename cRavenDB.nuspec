@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>cRavenDB</id>
+    <version>0.2</version>
+    <authors>Stephane Erbrech</authors>
+    <owners>Stephane Erbrech</owners>
+    <licenseUrl>https://github.com/serbrech/cRavenDB/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/serbrech/cRavenDB/</projectUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>Powershell DSCResource to install ravenDB</description>
+    <releaseNotes></releaseNotes>
+    <copyright>Copyright 2016</copyright>
+    <tags>DSC DSCResource RavenDB Powershell</tags>
+  </metadata>
+  <files>
+    <file src="DSCResources\cRavenDB\*" target="" />
+    <file src="README.md" target="README.md" />
+    <file src="LICENSE" target="LICENSE" />
+  </files>
+</package>

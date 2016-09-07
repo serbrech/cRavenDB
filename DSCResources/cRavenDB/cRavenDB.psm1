@@ -1,3 +1,4 @@
+Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue;
 
 enum Ensure {
     Present
@@ -69,28 +70,23 @@ class cRavenDB {
             Write-Debug "InstallPath not found, creating directory"
             New-Item -ItemType Directory $this.InstallPath
         }
-               
-        $location = 'https://www.nuget.org/api/v2/';
-        
-        if(-not (Get-PackageProvider NuGet -ErrorAction SilentlyContinue)){ 
-            Write-Verbose "Installing Nuget package provider";
-            Find-PackageProvider NuGet|Install-PackageProvider -Force 
-        }
-
-        if(-not (Get-PackgageSource -ProviderName NuGet -Location $location -ErrorAction SilentlyContinue)){
-            Write-Verbose "Registrering Nuget package source";
-            Register-PackageSource -Name $location -Location $location -ProviderName NuGet -Force;
-        }
-
-        if($this.PackagePath -ne ''){
+        if($this.PackagePath -and $this.PackagePath -ne ''){
             Copy-Item -Path $this.PackagePath -Destination "$($this.InstallPath)\RavenDB.Server.$($this.Version).nupkg" -Force
-        }
-        else {
+        } else {
+            $location = 'https://www.nuget.org/api/v2/';
+        
+            if(-not (Get-PackageProvider NuGet -ErrorAction SilentlyContinue)){ 
+                Write-Verbose "Installing Nuget package provider";
+                Find-PackageProvider NuGet|Install-PackageProvider -Force 
+            }
+
+            if(-not (Get-PackgageSource -ProviderName NuGet -Location $location -ErrorAction SilentlyContinue)){
+                Write-Verbose "Registrering Nuget package source";
+                Register-PackageSource -Name $location -Location $location -ProviderName NuGet -Force;
+            }
             Save-Package RavenDB.Server -RequiredVersion $this.Version -Path $this.InstallPath -Source "https://www.nuget.org/api/v2/"
-        }
-
+        }                
         $this.Unzip("$($this.InstallPath)\RavenDB.Server.$($this.Version).nupkg", "tools*", $this.InstallPath)
-
         $appSettingsPath = "$($this.InstallPath)\Raven.Server.exe.config"
         $this.SetAppSettings($appSettingsPath, "Raven/Port", $this.Port)
         $this.SetAppSettings($appSettingsPath, "Raven/DataDir/Legacy", $this.DataDir)

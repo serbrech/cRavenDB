@@ -30,7 +30,7 @@ RequiredAssemblies = @('System.IO.Compression.FileSystem')
 
 DscResourcesToExport = @('cRavenDB')
 
-FileList = @(".psm1")
+FileList = @("cRavenDB.psm1")
 
 PrivateData = @{
 

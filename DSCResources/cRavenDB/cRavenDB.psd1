@@ -10,7 +10,7 @@
 
 RootModule = 'cRavenDB.psm1'
 
-ModuleVersion = '0.3'
+ModuleVersion = '0.4'
 
 GUID = '616876a3-25e8-4010-a386-12fbc7a8cde5'
 
@@ -26,7 +26,7 @@ PowerShellVersion = '5.0'
 
 FunctionsToExport = '*'
 
-RequiredAssemblies = @('System.IO.Compression.FileSystem')
+RequiredAssemblies = @()
 
 DscResourcesToExport = @('cRavenDB')
 

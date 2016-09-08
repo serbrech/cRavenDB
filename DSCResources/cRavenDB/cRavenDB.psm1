@@ -1,5 +1,3 @@
-Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue;
-
 enum Ensure {
     Present
     Absent
@@ -151,12 +149,24 @@ class cRavenDB {
 
     [void] Unzip ([string]$zipfile, [string]$filePattern, [string]$outpath)
     {
-        Add-Type -AssemblyName System.IO.Compression.FileSystem
-        $ziparchive = [System.IO.Compression.ZipFile]::OpenRead($zipfile)
-        $ziparchive.Entries | 
-        Where-Object { $_.FullName -like $filePattern } |
-        Foreach-Object { [System.IO.Compression.ZipFileExtensions]::ExtractToFile($_, "$outpath/$($_.Name)") }
-        $ziparchive.Dispose()
+        $tmpFolder = join-path $env:TEMP ("RavenInstallTmp{0}" -f (Get-Date).ToString("dd.MM.yyyy"))
+        if((Test-Path $tmpFolder )){
+            Remove-Item $tmpFolder -Force;
+        }
+        new-item -Path $tmpFolder -ItemType Directory -Force|out-null;
+        $dest = (Join-Path $tmpFolder (Split-path $zipfile -Leaf).Replace('.nupkg','.zip'));
+        Write-Verbose "Copying $zipfile to destination $dest";
+        Copy-Item $zipfile $dest|out-null;
+        
+        Write-Verbose "Unzipping $dest to $outpath "
+        Expand-Archive $dest -DestinationPath $tmpFolder -Force;         
+        
+        Get-ChildItem -File (Join-path $tmpFolder "tools")|ForEach-Object {
+            Copy-Item $_.FullName -Destination $outpath -Force
+        }
+
+        Write-Verbose 'Removing temp files';
+        Remove-Item $tmpFolder -Force;
     }
 
 }

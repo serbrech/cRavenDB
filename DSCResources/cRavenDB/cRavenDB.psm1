@@ -6,6 +6,8 @@ enum Ensure {
 [DscResource()] 
 class cRavenDB {
 
+    [string] $RavenAppSettingsRequiredGroupKey = "Raven/Authorization/Windows/RequiredGroups"
+
     [DSCProperty(Key)] 
     [string] $Name
 
@@ -24,11 +26,20 @@ class cRavenDB {
     [DSCProperty()]
     [Ensure] $Ensure
 
+    [DSCProperty()]
+    [string] $RavenConfigPath
+
     [DSCProperty(Mandatory)]
     [string] $Port
 
     [DSCProperty()]
     [bool] $DeleteFilesAndData
+
+    [DSCProperty()]
+    [string] $RavenAnonymousAccess = "None"
+
+    [DSCProperty()]
+    [string[]] $RavenAuthorizationWindowsRequiredGroups = ""
 
     [cRavenDB] Get() 
     {
@@ -43,9 +54,21 @@ class cRavenDB {
     }
 
     [bool] Test()
-    {
+    { 
+        #refactor into a GetTest that returns a class with properties, so it can be reused on the Set() method to change just what needs to be changed, and not re-install...
         $serviceFound = @(gsv $this.Name -ErrorAction SilentlyContinue).count -gt 0
-        return $serviceFound -and ($this.Ensure -eq "Present")
+        
+        $testPresent = $serviceFound -and ($this.Ensure -eq "Present")
+        $testRavenAnonymousAccess = $false
+        $testRequiredGroups = $false
+        $configOk = $false
+        $appconfigPath = "$($this.InstallPath)\Raven.Server.exe.config"
+        if (Test-Path $appconfigPath) {
+            $testRavenAnonymousAccess = $this.TestAppSetting($appconfigPath, "Raven/AnonymousAccess", $this.RavenAnonymousAccess)
+            $testRequiredGroups = $this.TestAppSetting($appconfigPath, $this.RavenAppSettingsRequiredGroupKey, $this.RavenAuthorizationWindowsRequiredGroups)
+            $configOk = $testRavenAnonymousAccess -and $testRequiredGroups
+        }
+        return $testPresent -and $testRavenAnonymousAccess -and $testRequiredGroups
     }
 
     [void] Set() 
@@ -85,6 +108,7 @@ class cRavenDB {
             Save-Package RavenDB.Server -RequiredVersion $this.Version -Path $this.InstallPath -Source "https://www.nuget.org/api/v2/"
         }                
         $this.Unzip("$($this.InstallPath)\RavenDB.Server.$($this.Version).nupkg", "tools*", $this.InstallPath)
+        
         $appSettingsPath = "$($this.InstallPath)\Raven.Server.exe.config"
         $this.SetAppSettings($appSettingsPath, "Raven/Port", $this.Port)
         $this.SetAppSettings($appSettingsPath, "Raven/DataDir/Legacy", $this.DataDir)
@@ -145,6 +169,19 @@ class cRavenDB {
         $node = $doc.SelectSingleNode('configuration/appSettings/add[@key="' + $key + '"]')
         $node.Attributes['value'].Value = $value
         $doc.Save($config)
+    }
+
+    [bool] TestAppSetting([string]$config, [string]$key, [string]$value){
+        $currentValue = $this.GetAppSettings($config, $key)
+        return $currentValue -eq $value
+    }
+
+    [string] GetAppSettings([string]$config, [string]$key) 
+    {
+        $doc = New-Object System.Xml.XmlDocument
+        $doc.Load($config)
+        $node = $doc.SelectSingleNode('configuration/appSettings/add[@key="' + $key + '"]')
+        return $node.Attributes['value'].Value
     }
 
     [void] Unzip ([string]$zipfile, [string]$filePattern, [string]$outpath)
